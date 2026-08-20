@@ -14,7 +14,17 @@ import { parseExcelWorkbook, convertExcelDomToPdf } from '../services/excelServi
 import LoadingOverlay from './LoadingOverlay';
 import PdfViewerModal from './PdfViewerModal';
 
+import CustomToast from './CustomToast';
+
 export default function ExcelToPdf({ lang = 'es', t }) {
+  const [toastMessage, setToastMessage] = useState('');
+  const [isToastOpen, setIsToastOpen] = useState(false);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setIsToastOpen(true);
+    setTimeout(() => setIsToastOpen(false), 4500);
+  };
   const [excelFile, setExcelFile] = useState(null);
   const [workbookData, setWorkbookData] = useState(null);
   const [activeSheetIdx, setActiveSheetIdx] = useState(0);
@@ -55,7 +65,7 @@ export default function ExcelToPdf({ lang = 'es', t }) {
       }
     } catch (err) {
       console.error('Error reading Excel file:', err);
-      alert('Ocurrió un error al leer el archivo de Excel. Asegúrate de que sea un archivo .xlsx válido.');
+      showToast('Ocurrió un error al leer el archivo de Excel. Asegúrate de que sea un archivo .xlsx válido.');
       setExcelFile(null);
       setWorkbookData(null);
     } finally {
@@ -139,7 +149,7 @@ export default function ExcelToPdf({ lang = 'es', t }) {
       }, 1000);
     } catch (err) {
       console.error('Error generating PDF:', err);
-      alert('Error al convertir la hoja de Excel a PDF: ' + err.message);
+      showToast('Error al convertir la hoja de Excel a PDF: ' + err.message);
       setIsConverting(false);
     }
   };
@@ -151,6 +161,7 @@ export default function ExcelToPdf({ lang = 'es', t }) {
 
   return (
     <div>
+      <CustomToast isOpen={isToastOpen} message={toastMessage} onClose={() => setIsToastOpen(false)} />
       <LoadingOverlay 
         isOpen={isConverting}
         title={t('tools.excel.title')}

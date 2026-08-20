@@ -6,12 +6,12 @@ const PDFJS_VERSION = pdfjsLib.version || '3.11.174';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
 
 /**
- * Gets page count and metadata for a PDF file.
+ * Gets page count and metadata for a PDF file without detaching the ArrayBuffer.
  */
 export async function getPdfInfo(file) {
   const arrayBuffer = await file.arrayBuffer();
   try {
-    const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const pdfDoc = await PDFDocument.load(arrayBuffer.slice(0), { ignoreEncryption: true });
     const pageCount = pdfDoc.getPageCount();
     return { pageCount, arrayBuffer };
   } catch (err) {
@@ -21,11 +21,11 @@ export async function getPdfInfo(file) {
 }
 
 /**
- * Generates a Data URL thumbnail of a specific page in a PDF file.
+ * Generates a Data URL thumbnail of a specific page in a PDF file using a cloned ArrayBuffer slice.
  */
 export async function renderPdfPageThumbnail(arrayBuffer, pageNum = 1, scale = 0.5) {
   try {
-    const uint8Array = new Uint8Array(arrayBuffer);
+    const uint8Array = new Uint8Array(arrayBuffer.slice(0));
     const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
     const pdf = await loadingTask.promise;
 
@@ -64,7 +64,7 @@ export async function mergePdfFiles(items, onProgress) {
     const item = items[i];
 
     try {
-      const srcDoc = await PDFDocument.load(item.arrayBuffer, { ignoreEncryption: true });
+      const srcDoc = await PDFDocument.load(item.arrayBuffer.slice(0), { ignoreEncryption: true });
       const totalPages = srcDoc.getPageCount();
 
       const pageIndices = item.pageRange && item.pageRange.length > 0
@@ -104,7 +104,7 @@ export async function mergePdfFiles(items, onProgress) {
  * Splits a PDF file — extracts selected page numbers into a new PDF.
  */
 export async function splitPdfFile(arrayBuffer, selectedPageNumbers) {
-  const srcDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+  const srcDoc = await PDFDocument.load(arrayBuffer.slice(0), { ignoreEncryption: true });
   const totalPages = srcDoc.getPageCount();
   const newPdf = await PDFDocument.create();
 
@@ -124,14 +124,11 @@ export async function splitPdfFile(arrayBuffer, selectedPageNumbers) {
 }
 
 /**
- * Converts multiple image files (PNG, JPG, WebP) into a PDF document.
- * Supports fitMode:
- * - 'single_page': Fits ALL images onto 1 single PDF page!
- * - 'page_per_image': Each image on its own PDF page (Default).
+ * Converts multiple image files into a PDF document.
  */
 export async function imagesToPdf(imageFiles, margin = 10, orientation = 'portrait', fitMode = 'page_per_image') {
   const pdfDoc = await PDFDocument.create();
-  const marginPt = margin * 2.835; // 1mm ≈ 2.835pt
+  const marginPt = margin * 2.835;
 
   const isLandscape = orientation === 'landscape';
   const pageWidth = isLandscape ? 841.89 : 595.28;
@@ -172,13 +169,11 @@ export async function imagesToPdf(imageFiles, margin = 10, orientation = 'portra
   }
 
   if (fitMode === 'single_page') {
-    // FIT ALL IMAGES ONTO 1 SINGLE PAGE!
     const page = pdfDoc.addPage([pageWidth, pageHeight]);
     const availableW = pageWidth - (marginPt * 2);
     const availableH = pageHeight - (marginPt * 2);
 
     const count = embeddedImages.length;
-    // Calculate grid dimensions e.g. 2x2, 3x2, etc.
     const cols = Math.ceil(Math.sqrt(count));
     const rows = Math.ceil(count / cols);
 
@@ -195,7 +190,6 @@ export async function imagesToPdf(imageFiles, margin = 10, orientation = 'portra
       const drawH = imgH * scale;
 
       const cellX = marginPt + (c * cellW);
-      // PDF y-axis is bottom-up!
       const cellY = pageHeight - marginPt - ((r + 1) * cellH);
 
       const x = cellX + (cellW - drawW) / 2;
@@ -204,7 +198,6 @@ export async function imagesToPdf(imageFiles, margin = 10, orientation = 'portra
       page.drawImage(img, { x, y, width: drawW, height: drawH });
     });
   } else {
-    // ONE PAGE PER IMAGE
     for (const image of embeddedImages) {
       const { width: imgW, height: imgH } = image;
       const availableW = pageWidth - (marginPt * 2);

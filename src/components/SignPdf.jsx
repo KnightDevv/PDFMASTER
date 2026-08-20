@@ -8,13 +8,13 @@ import {
   RotateCw,
   Type,
   Image as ImageIcon,
-  Eye,
-  Sparkles
+  Sliders
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PDFDocument, degrees } from 'pdf-lib';
 import { getPdfInfo, renderPdfPageThumbnail } from '../services/pdfService';
 import LoadingOverlay from './LoadingOverlay';
+import CustomToast from './CustomToast';
 
 export default function SignPdf({ lang = 'es', t }) {
   const [file, setFile] = useState(null);
@@ -28,8 +28,21 @@ export default function SignPdf({ lang = 'es', t }) {
   const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [typedName, setTypedName] = useState('Mi Firma');
   const [drawColor, setDrawColor] = useState('#000000');
+  const [fontFamily, setFontFamily] = useState('"Brush Script MT", cursive');
 
-  // Signature placement on preview
+  // Custom Toast State (No browser "la página dice" alerts!)
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('error');
+  const [isToastOpen, setIsToastOpen] = useState(false);
+
+  const showToast = (msg, type = 'error') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setIsToastOpen(true);
+    setTimeout(() => setIsToastOpen(false), 4500);
+  };
+
+  // Signature placement & size controls
   const [sigPos, setSigPos] = useState({ x: 120, y: 150, width: 160, height: 80, rotation: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -96,21 +109,21 @@ export default function SignPdf({ lang = 'es', t }) {
     }
   };
 
-  // Generate typed signature canvas
+  // Generate typed signature canvas with customizable fonts
   useEffect(() => {
     if (sigMode === 'type' && typedName) {
       const cvs = document.createElement('canvas');
       cvs.width = 400;
       cvs.height = 160;
       const ctx = cvs.getContext('2d');
-      ctx.font = '42px "Brush Script MT", cursive, sans-serif';
+      ctx.font = `40px ${fontFamily}`;
       ctx.fillStyle = drawColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(typedName, 200, 80);
       setSignatureDataUrl(cvs.toDataURL('image/png'));
     }
-  }, [sigMode, typedName, drawColor]);
+  }, [sigMode, typedName, drawColor, fontFamily]);
 
   const handleImageUpload = (e) => {
     const imgFile = e.target.files?.[0];
@@ -131,18 +144,17 @@ export default function SignPdf({ lang = 'es', t }) {
       setInfo(pdfInfo);
       setActivePage(1);
 
-      const thumb = await renderPdfPageThumbnail(pdfInfo.arrayBuffer, 1, 0.8);
+      const thumb = await renderPdfPageThumbnail(pdfInfo.arrayBuffer.slice(0), 1, 0.8);
       setPageThumbnail(thumb);
     } catch (err) {
-      alert('Error al leer el archivo PDF: ' + err.message);
+      showToast('Error al leer el archivo PDF: ' + err.message);
       setFile(null);
     }
   };
 
-  // Render thumbnail when activePage changes
   useEffect(() => {
     if (info && activePage) {
-      renderPdfPageThumbnail(info.arrayBuffer, activePage, 0.8).then(setPageThumbnail);
+      renderPdfPageThumbnail(info.arrayBuffer.slice(0), activePage, 0.8).then(setPageThumbnail);
     }
   }, [activePage, info]);
 
@@ -166,7 +178,7 @@ export default function SignPdf({ lang = 'es', t }) {
 
   const handleSignPdf = async () => {
     if (!file || !signatureDataUrl) {
-      alert('Por favor dibuja, escribe o sube una firma primero.');
+      showToast('Por favor dibuja, escribe o sube una firma primero.');
       return;
     }
 
@@ -178,11 +190,12 @@ export default function SignPdf({ lang = 'es', t }) {
     try {
       await new Promise(r => setTimeout(r, 500));
 
-      const pdfDoc = await PDFDocument.load(info.arrayBuffer);
+      // CLONE ARRAYBUFFER TO PREVENT DETACHED ARRAYBUFFER BUG
+      const clonedBuffer = info.arrayBuffer.slice(0);
+      const pdfDoc = await PDFDocument.load(clonedBuffer, { ignoreEncryption: true });
       const page = pdfDoc.getPage(activePage - 1);
       const { width: pWidth, height: pHeight } = page.getSize();
 
-      // Convert dataUrl to bytes
       const base64Data = signatureDataUrl.split(',')[1];
       const binaryStr = atob(base64Data);
       const bytes = new Uint8Array(binaryStr.length);
@@ -195,8 +208,6 @@ export default function SignPdf({ lang = 'es', t }) {
       setProgress(65);
       setStatusText('Calculando coordenadas vectoriales de la firma...');
 
-      // Map preview coordinates to PDF page points
-      // Preview container is approx 480px width
       const previewWidth = 480;
       const previewHeight = 640;
 
@@ -206,7 +217,6 @@ export default function SignPdf({ lang = 'es', t }) {
       const drawW = sigPos.width * scaleX;
       const drawH = sigPos.height * scaleY;
 
-      // PDF y-axis is inverted (bottom-left 0,0)
       const x = Math.max(0, sigPos.x * scaleX);
       const y = Math.max(0, pHeight - (sigPos.y * scaleY) - drawH);
 
@@ -244,7 +254,7 @@ export default function SignPdf({ lang = 'es', t }) {
       }, 1000);
     } catch (err) {
       console.error('Error signing PDF:', err);
-      alert('Error al firmar el PDF: ' + err.message);
+      showToast('Error al firmar el PDF: ' + err.message);
       setIsProcessing(false);
     }
   };
@@ -253,6 +263,14 @@ export default function SignPdf({ lang = 'es', t }) {
 
   return (
     <div onMouseMove={handleMouseMoveSig} onMouseUp={handleMouseUpSig}>
+      {/* Custom Sleek Toast Notification */}
+      <CustomToast 
+        isOpen={isToastOpen}
+        message={toastMessage}
+        type={toastType}
+        onClose={() => setIsToastOpen(false)}
+      />
+
       <LoadingOverlay 
         isOpen={isProcessing}
         title={tSign.title}
@@ -286,7 +304,7 @@ export default function SignPdf({ lang = 'es', t }) {
             <PenTool size={36} />
           </div>
           <h3 className="dropzone-title">{t('dropzone.dragPdf')}</h3>
-          <p className="dropzone-subtitle">Firma digitalmente con ratón, texto o imagen</p>
+          <p className="dropzone-subtitle">Firma digitalmente con tipo de letra, tamaño y posición</p>
           <button className="btn-primary" type="button">
             <Upload size={18} />
             <span>{t('dropzone.browsePdf')}</span>
@@ -362,15 +380,32 @@ export default function SignPdf({ lang = 'es', t }) {
             )}
 
             {sigMode === 'type' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Texto:</label>
-                <input 
-                  type="text" 
-                  className="option-select"
-                  style={{ width: '250px', fontSize: '1.1rem' }}
-                  value={typedName}
-                  onChange={(e) => setTypedName(e.target.value)}
-                />
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Nombre:</label>
+                  <input 
+                    type="text" 
+                    className="option-select"
+                    style={{ width: '200px', fontSize: '1.1rem' }}
+                    value={typedName}
+                    onChange={(e) => setTypedName(e.target.value)}
+                  />
+                </div>
+
+                {/* Font Selector */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Tipo de Letra:</label>
+                  <select 
+                    className="option-select"
+                    value={fontFamily}
+                    onChange={(e) => setFontFamily(e.target.value)}
+                  >
+                    <option value='"Brush Script MT", cursive'>Cursiva Elegante</option>
+                    <option value='"Dancing Script", "Great Vibes", cursive'>Caligrafía Clásica</option>
+                    <option value='"Courier New", monospace'>Manuscrita Monospace</option>
+                    <option value='"Pacifico", cursive, sans-serif'>Firma Moderna</option>
+                  </select>
+                </div>
               </div>
             )}
 
@@ -383,6 +418,36 @@ export default function SignPdf({ lang = 'es', t }) {
                 </label>
               </div>
             )}
+
+            {/* Signature Dimension Controls (Width / Height) */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.25rem', paddingTop: '0.5rem', borderTop: '1px dashed var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Sliders size={16} color="var(--accent-rose)" />
+                <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Ancho de Firma:</label>
+                <input 
+                  type="range" 
+                  min="80" 
+                  max="320"
+                  value={sigPos.width}
+                  onChange={(e) => setSigPos(p => ({ ...p, width: Number(e.target.value) }))}
+                  style={{ width: '100px' }}
+                />
+                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{sigPos.width}px</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Alto de Firma:</label>
+                <input 
+                  type="range" 
+                  min="40" 
+                  max="200"
+                  value={sigPos.height}
+                  onChange={(e) => setSigPos(p => ({ ...p, height: Number(e.target.value) }))}
+                  style={{ width: '100px' }}
+                />
+                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{sigPos.height}px</span>
+              </div>
+            </div>
           </div>
 
           {/* Interactive PDF Page Preview with Signature Drag & Resize */}
