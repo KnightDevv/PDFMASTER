@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F43F5E;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded background -->
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#grad1)"/>
+  <!-- Inner shadow layer -->
+  <rect x="16" y="16" width="480" height="480" rx="80" ry="80" fill="rgba(0,0,0,0.15)"/>
+  <!-- Document shape -->
+  <path d="M160 80 L352 80 L400 128 L400 432 L112 432 L112 128 Z" fill="#FFFFFF" opacity="0.95"/>
+  <!-- Document fold corner -->
+  <path d="M352 80 L352 128 L400 128 Z" fill="#E2E8F0"/>
+  <!-- PDF text -->
+  <text x="256" y="240" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="88" fill="#F43F5E" text-anchor="middle" dominant-baseline="middle">PDF</text>
+  <!-- Green accent bar for Excel -->
+  <rect x="142" y="280" width="228" height="8" rx="4" fill="url(#grad2)"/>
+  <!-- Three data lines -->
+  <rect x="142" y="310" width="180" height="6" rx="3" fill="#CBD5E1"/>
+  <rect x="142" y="335" width="140" height="6" rx="3" fill="#CBD5E1"/>
+  <rect x="142" y="360" width="200" height="6" rx="3" fill="#CBD5E1"/>
+  <!-- Small grid icon (bottom right of doc) -->
+  <rect x="330" y="310" width="18" height="18" rx="2" fill="#10B981" opacity="0.7"/>
+  <rect x="352" y="310" width="18" height="18" rx="2" fill="#10B981" opacity="0.5"/>
+  <rect x="330" y="332" width="18" height="18" rx="2" fill="#10B981" opacity="0.5"/>
+  <rect x="352" y="332" width="18" height="18" rx="2" fill="#10B981" opacity="0.3"/>
+</svg>
