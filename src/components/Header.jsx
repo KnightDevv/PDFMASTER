@@ -2,13 +2,6 @@ import React, { useState } from 'react';
 import {
   Combine,
   FileSpreadsheet,
-  FileText,
-  Scissors,
-  ImagePlus,
-  LayoutList,
-  PenTool,
-  Zap,
-  Stamp,
   Sun,
   Moon,
   Globe,
@@ -20,20 +13,11 @@ import {
 export default function Header({ activeRoute, navigate, theme, toggleTheme, lang, setLang, t }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Keep only 3 clean main navigation buttons in the top header
   const navItems = [
     { id: 'inicio', label: t('nav.inicio'), icon: LayoutDashboard },
     { id: 'unir-pdf', label: t('nav.unirPdf'), icon: Combine },
     { id: 'excel-a-pdf', label: t('nav.excelPdf'), icon: FileSpreadsheet },
-    { id: 'pdf-a-excel', label: t('nav.pdfExcel'), icon: FileSpreadsheet },
-    { id: 'word-a-pdf', label: t('nav.wordPdf'), icon: FileText },
-    { id: 'pdf-a-word', label: t('nav.pdfWord'), icon: FileText },
-    { id: 'pdf-a-imagenes', label: t('nav.pdfImagenes'), icon: ImagePlus },
-    { id: 'comprimir-pdf', label: t('nav.comprimirPdf'), icon: Zap },
-    { id: 'marca-de-agua', label: t('nav.marcaAgua'), icon: Stamp },
-    { id: 'firmar-pdf', label: t('nav.firmarPdf'), icon: PenTool },
-    { id: 'dividir-pdf', label: t('nav.dividirPdf'), icon: Scissors },
-    { id: 'imagenes-a-pdf', label: t('nav.imagenesPdf'), icon: ImagePlus },
-    { id: 'organizar-pdf', label: t('nav.organizarPdf'), icon: LayoutList },
   ];
 
   const handleNav = (routeId) => {
@@ -55,7 +39,7 @@ export default function Header({ activeRoute, navigate, theme, toggleTheme, lang
           <span>{t('brand')}</span>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation - Clean 3 Items */}
         <nav className="nav-links">
           {navItems.map((item) => {
             const Icon = item.icon;
