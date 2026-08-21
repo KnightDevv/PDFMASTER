@@ -1,1 +1,16 @@
-{"projectId":"prj_SrgP0p1ztjqRLEY3Kt8KMpma0j7f","orgId":"team_hmdjovKTxCszNHovgibghV2S","projectName":"excel-pdf"}
+{
+  "projectId": "prj_SrgP0p1ztjqRLEY3Kt8KMpma0j7f",
+  "orgId": "team_hmdjovKTxCszNHovgibghV2S",
+  "projectName": "excel-pdf",
+  "settings": {
+    "createdAt": 1787180773569,
+    "framework": "vite",
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}
